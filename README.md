@@ -26,10 +26,7 @@ Learners design basic data collection and preprocessing workflows to support AI 
 
 By the end of this module, participants will be able to:
 
-1. 
-**Design and implement simple data pipelines** to feed and store AI-related data for web applications.
-
-
+1. **Design and implement simple data pipelines** to feed and store AI-related data for web applications.
 2. **Apply preprocessing techniques** such as sanitization, tokenization, and formatting to ensure data quality for AI models.
 3. **Utilize LangChain** to create sequential chains that automate the flow of data from user input to storage or further processing.
 
@@ -53,9 +50,12 @@ A **Data Pipeline** is a set of automated processes that move data from one plac
 
 ### The ETL Model
 
-* **Extract:** Gathering data from sources (User forms, API logs, databases).
-* **Transform:** Cleaning and formatting the data (Removing HTML tags, anonymizing names, vectorizing text).
-* **Load:** Storing the clean data in a destination (Vector Database, Data Warehouse).
+* **Extract:** 
+  <br>Gathering data from sources (User forms, API logs, databases).
+* **Transform:** 
+  <br>Cleaning and formatting the data (Removing HTML tags, anonymizing names, vectorizing text).
+* **Load:** 
+  <br>Storing the clean data in a destination (Vector Database, Data Warehouse).
 
 ```mermaid
 graph LR
@@ -73,18 +73,25 @@ To build personalized AI experiences, you need to collect the right signals with
 
 ### Types of AI-Ready Data
 
-* **Explicit Feedback:** Thumbs up/down on an AI response. This is gold for "Fine-Tuning."
-* **Implicit Signals:** How long a user spends reading a generated article (Dwell time).
-* **Contextual Data:** The user's location or previous purchase history, which helps the AI generate relevant answers.
+* **Explicit Feedback:**
+  <br>Thumbs up/down on an AI response. This is gold for "Fine-Tuning."
+* **Implicit Signals:** 
+  <br>How long a user spends reading a generated article (Dwell time).
+* **Contextual Data:**
+  <br>The user's location or previous purchase history, which helps the AI generate relevant answers.
 
 ### Example: The Feedback Loop
 
 If you are building a chatbot, every interaction is a data point.
 
-1. **User:** "Show me shoes."
-2. **AI:** Shows boots.
-3. **User:** *Clicks "Next".* (Implicit signal: "I don't want boots").
-4. **Pipeline:** Capture this event  Tag "Boots" as negative for this session.
+1. **User:** 
+   <br>"Show me shoes."
+2. **AI:** 
+   <br>Shows boots.
+3. **User:** 
+   <br>*Clicks "Next".* (Implicit signal: "I don't want boots").
+4. **Pipeline:** 
+   <br>Capture this event  Tag "Boots" as negative for this session.
 
 ---
 
@@ -156,38 +163,97 @@ const res = await chain.call({ inputText: "Long user complaint..." });
 
 ---
 
-## 5. Lab: Building a Data Ingestion Pipeline
+## 5. Simple data pipelines for AI based web applications.
 
-**Objective:** Build a small data ingestion pipeline to store user input for model improvement.
+Integrating an AI model is not just about making a single API call; it requires managing the flow of data. If a user uploads a 50-page PDF and wants to "chat" with it, you cannot send the entire document to the AI API in one request due to size limits and latency. 
 
-### Scenario
+Instead, you must build a pipeline on your Node.js backend to handle this. We use **LangChain**, a powerful framework designed to chain together various data processing steps for Large Language Models. 
 
-You are building a "Customer Feedback" system. You need to collect raw feedback, strip out sensitive emails, summarize the feedback using AI, and save the clean entry to a file (simulating a database).
+A standard AI data pipeline involves three main steps:
+1.  **Ingestion (Loading):** Reading the raw unstructured data (e.g., extracting text from a PDF or scraping a webpage).
+2.  **Transformation (Chunking):** Splitting the massive text into smaller, manageable chunks.
+3.  **Vectorization and Storage:** Converting the text chunks into vector numbers using an Embeddings API and storing them in a database for quick retrieval later.
 
-### Step 1: Setup
+**Practical Example: Using Node.js and LangChain**
+Here is how an engineer might use LangChain on a Node.js server to process a text document into smaller pieces suitable for AI ingestion:
 
-* Initialize a Node.js project.
-* Install LangChain and OpenAI: `npm install langchain openai dotenv`.
+```javascript
+// Node.js Backend Pipeline Example using LangChain
+import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { Document } from "langchain/document";
 
-### Step 2: Create the Preprocessor
+async function processDataPipeline(rawText) {
+  // Step 1: Ingestion - Wrap the raw text in a LangChain Document format
+  const doc = new Document({ pageContent: rawText });
 
-Write a function `cleanData(rawText)` that removes email addresses using regex (as shown in section 3).
+  // Step 2: Transformation - Configure the text splitter to break the document into chunks
+  const textSplitter = new RecursiveCharacterTextSplitter({
+    chunkSize: 1000, // Maximum characters per chunk
+    chunkOverlap: 200, // Overlap ensures sentences aren't cut off abruptly
+  });
 
-### Step 3: Create the LangChain Flow
+  // Execute the split
+  const splitDocs = await textSplitter.splitDocuments([doc]);
+  
+  console.log(`Pipeline output: Split into ${splitDocs.length} chunks.`);
+  
+  // Step 3 (Next Phase): Send splitDocs to an Embeddings API
+  return splitDocs;
+}
 
-* Set up an `LLMChain` that takes the *cleaned* text and asks the AI to "Categorize this feedback as: Bug, Feature Request, or Praise."
-
-### Step 4: The "Load" Step
-
-* Use the `fs` (File System) module in Node.js to append the final JSON object (Original Text, Category, Timestamp) to a `data.json` file.
-
-### Step 5: Test
-
-Run your script with different inputs containing fake emails and see if they are redacted in the final file.
+```
 
 ---
 
-## 6. Wrap-Up and Reflection
+## 6. Architectural Flow of an AI Data Pipeline
+
+To visualize this integration, we can map the data flow from the moment the user uploads a file to the moment the processed data is safely stored and ready for AI inference.
+
+```mermaid
+graph TD
+    subgraph Client-Side [Browser / React]
+        A[User Uploads Document]
+    end
+
+    subgraph Server-Side [Node.js Backend]
+        B[Receive File in Express]
+        C[LangChain: Document Loader]
+        D[LangChain: Text Splitter]
+        E[OpenAI Embeddings API]
+    end
+
+    subgraph Storage & Inference [Database / AI]
+        F[(Vector Database)]
+    end
+
+    %% Pipeline Flow
+    A -->|Raw Unstructured Data| B
+    B -->|Ingestion| C
+    C -->|Transformation| D
+    D -->|Calls Embeddings API| E
+    E -->|Returns Vector Numbers| F
+    
+    classDef react fill:#61dafb,stroke:#333,stroke-width:2px,color:#000;
+    classDef node fill:#339933,stroke:#333,stroke-width:2px,color:#fff;
+    classDef db fill:#ff9900,stroke:#333,stroke-width:2px,color:#000;
+    
+    class A react;
+    class B,C,D,E node;
+    class F db;
+
+```
+
+---
+
+## 7. Lab: Building a Data Ingestion Pipeline
+
+**Objective:** Build a small data ingestion pipeline to store user input for model improvement.
+
+**Refer:** [**Building a Data Ingestion Pipeline**](https://git.generalassemb.ly/build-ai-powered-web-apps/Lab7_Building-a-Data-Ingestion-Pipeline)
+
+---
+
+## 8. Wrap-Up and Reflection
 
 **Reflection Questions:**
 
@@ -196,8 +262,8 @@ Run your script with different inputs containing fake emails and see if they are
 
 ---
 
-## 7. Resources
+## 9. Resources
 
-* [LangChain JS Documentation](https://www.google.com/search?q=https://js.langchain.com/docs/)
+* [LangChain JS Documentation](https://js.langchain.com/docs/)
 * [Node.js File System API](https://nodejs.org/api/fs.html)
 * [The ETL Data Pipeline Explained](https://www.ibm.com/topics/etl)
