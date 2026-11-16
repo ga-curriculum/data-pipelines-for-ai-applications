@@ -249,7 +249,7 @@ graph TD
 
 **Objective:** Build a small data ingestion pipeline to store user input for model improvement.
 
-**Refer:** [**Building a Data Ingestion Pipeline**](https://git.generalassemb.ly/build-ai-powered-web-apps/Lab7_Building-a-Data-Ingestion-Pipeline)
+**Refer:** [**Building a Data Ingestion Pipeline**](https://github.com/ga-curriculum/lab7-building-a-data-ingestion-pipeline)
 
 ---
 
